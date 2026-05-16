@@ -8,6 +8,8 @@ from database.models.recipe.step_ingredient import StepIngredient
 from database.models.recipe.step_item import StepItem
 from database.models.roadmap.category import Category
 from database.models.roadmap.roadmap_node import RoadmapNode
+from database.models.roadmap.user_unlocked_category import UserUnlockedCategory
+from database.models.roadmap.user_completed_node import UserCompletedNode
 
 __all__ = [
     "Language",
@@ -23,4 +25,6 @@ __all__ = [
     "StepItem",
     "Category",
     "RoadmapNode",
+    "UserUnlockedCategory",
+    "UserCompletedNode",
 ]
