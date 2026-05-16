@@ -1,7 +1,7 @@
 from uuid import UUID, uuid4
 from sqlalchemy import Text, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from database.connection import Base
+from infrastructure.database.connection import Base
 
 class Category(Base):
     __tablename__ = "categories"

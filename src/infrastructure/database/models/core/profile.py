@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import Text, Integer, Date, TIMESTAMP, text, REAL, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from database.connection import Base
+from infrastructure.database.connection import Base
 
 
 class Profile(Base):

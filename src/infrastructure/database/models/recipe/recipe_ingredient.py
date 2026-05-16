@@ -1,7 +1,7 @@
 from uuid import UUID, uuid4
 from sqlalchemy import Text, Numeric, Integer, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from database.connection import Base
+from infrastructure.database.connection import Base
 
 class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredients"

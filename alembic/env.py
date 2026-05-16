@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from config import settings
-from database.connection import Base
-import database.models  # Import models to register them with Base.metadata
+from core.config import settings
+from infrastructure.database.connection import Base
+import infrastructure.database.models  # Register all models with Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

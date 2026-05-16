@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Text, Integer, ForeignKey, ARRAY, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from database.connection import Base
+from infrastructure.database.connection import Base
 
 class RoadmapNode(Base):
     __tablename__ = "roadmap_nodes"

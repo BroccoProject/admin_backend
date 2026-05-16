@@ -1,8 +1,8 @@
 from uuid import UUID, uuid4
 from sqlalchemy import Text, Numeric, ForeignKey, ARRAY, Enum as SQLEnum, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from database.connection import Base
-from database.models.enums import IngredientAction
+from infrastructure.database.connection import Base
+from infrastructure.database.models.enums import IngredientAction
 
 class StepIngredient(Base):
     __tablename__ = "step_ingredients"

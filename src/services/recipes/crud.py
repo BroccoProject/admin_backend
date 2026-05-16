@@ -3,14 +3,14 @@ from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.recipe.recipe import Recipe
-from database.models.recipe.recipe_ingredient import RecipeIngredient
-from database.models.recipe.recipe_step import RecipeStep
-from database.models.recipe.step_ingredient import StepIngredient
-from database.models.recipe.step_item import StepItem
-from database.models.roadmap.roadmap_node import RoadmapNode
-from database.models.roadmap.category import Category
-from schemas.recipe import RecipeResponse, RecipeDeletePreview
+from infrastructure.database.models.recipe.recipe import Recipe
+from infrastructure.database.models.recipe.recipe_ingredient import RecipeIngredient
+from infrastructure.database.models.recipe.recipe_step import RecipeStep
+from infrastructure.database.models.recipe.step_ingredient import StepIngredient
+from infrastructure.database.models.recipe.step_item import StepItem
+from infrastructure.database.models.roadmap.roadmap_node import RoadmapNode
+from infrastructure.database.models.roadmap.category import Category
+from api.schemas.recipe import RecipeResponse, RecipeDeletePreview
 
 
 async def get_recipes(
@@ -158,9 +158,7 @@ async def delete_recipe(db: AsyncSession, recipe_id: UUID) -> bool:
     """Delete a recipe. Returns True on success.
 
     Will raise IntegrityError (caught in the API layer as HTTP 409) if any
-    roadmap_node still references this recipe — the FK is now RESTRICT.
-    The admin UI pre-empts this via the delete-preview check, but the DB
-    enforces it as the final guard.
+    roadmap_node still references this recipe — the FK is RESTRICT.
     """
     result = await db.execute(select(Recipe).where(Recipe.id == recipe_id))
     recipe = result.scalar_one_or_none()

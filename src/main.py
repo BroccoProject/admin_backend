@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.v1.categories import router as categories_router
-from api.v1.recipes import router as recipes_router
+from api.routers.categories import router as categories_router
+from api.routers.recipes import router as recipes_router
 
 app = FastAPI(title="Brokulak Admin Panel API", version="0.1.0")
 

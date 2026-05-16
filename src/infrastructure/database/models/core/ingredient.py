@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from database.connection import Base
+from infrastructure.database.connection import Base
 
 class Ingredient(Base):
     __tablename__ = "ingredients"

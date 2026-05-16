@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.connection import get_db
-from schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview
-from services import recipe_service
+from infrastructure.database.connection import get_db
+from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview
+from services.recipes import crud as recipe_crud
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
@@ -22,7 +22,7 @@ async def list_recipes(
     db: AsyncSession = Depends(get_db),
 ):
     """List recipes with pagination, search, and sorting."""
-    recipes, total = await recipe_service.get_recipes(
+    recipes, total = await recipe_crud.get_recipes(
         db, page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
     )
     total_pages = max(1, math.ceil(total / page_size))
@@ -42,7 +42,7 @@ async def get_recipe(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single recipe by ID."""
-    recipe = await recipe_service.get_recipe_by_id(db, recipe_id)
+    recipe = await recipe_crud.get_recipe_by_id(db, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return recipe
@@ -53,15 +53,11 @@ async def get_recipe_delete_preview(
     recipe_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """Return cascade impact counts before deleting a recipe.
-
-    Note: deletion will be blocked by the DB if the recipe is still
-    referenced by any roadmap_node (no cascade on that FK).
-    """
-    recipe = await recipe_service.get_recipe_by_id(db, recipe_id)
+    """Return cascade impact counts before deleting a recipe."""
+    recipe = await recipe_crud.get_recipe_by_id(db, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return await recipe_service.get_delete_preview(db, recipe_id)
+    return await recipe_crud.get_delete_preview(db, recipe_id)
 
 
 @router.delete("/{recipe_id}", status_code=200)
@@ -71,7 +67,7 @@ async def delete_recipe(
 ):
     """Delete a recipe. Returns 409 if blocked by a roadmap node reference."""
     try:
-        deleted = await recipe_service.delete_recipe(db, recipe_id)
+        deleted = await recipe_crud.delete_recipe(db, recipe_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Recipe not found")
         return {"detail": "Recipe deleted successfully"}

@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Text, Integer, text, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from database.connection import Base
+from infrastructure.database.connection import Base
 
 class RecipeStep(Base):
     __tablename__ = "recipe_steps"

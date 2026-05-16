@@ -1,14 +1,14 @@
 import math
 from uuid import UUID
 
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.roadmap.category import Category
-from database.models.roadmap.roadmap_node import RoadmapNode
-from database.models.roadmap.user_unlocked_category import UserUnlockedCategory
-from database.models.roadmap.user_completed_node import UserCompletedNode
-from schemas.category import CategoryCreate, CategoryUpdate
+from infrastructure.database.models.roadmap.category import Category
+from infrastructure.database.models.roadmap.roadmap_node import RoadmapNode
+from infrastructure.database.models.roadmap.user_unlocked_category import UserUnlockedCategory
+from infrastructure.database.models.roadmap.user_completed_node import UserCompletedNode
+from api.schemas.category import CategoryCreate, CategoryUpdate
 
 
 async def get_categories(
@@ -28,7 +28,6 @@ async def get_categories(
         query = query.where(search_filter)
         count_query = count_query.where(search_filter)
 
-    # Sorting
     allowed_sort_fields = {"title", "category_area", "category_type", "total_nodes", "unlock_cost_stars"}
     if sort_by in allowed_sort_fields:
         column = getattr(Category, sort_by)
@@ -36,7 +35,6 @@ async def get_categories(
     else:
         query = query.order_by(Category.title.asc())
 
-    # Pagination
     offset = (page - 1) * page_size
     query = query.offset(offset).limit(page_size)
 
@@ -57,7 +55,6 @@ async def get_category_by_id(db: AsyncSession, category_id: UUID) -> Category | 
 
 async def get_delete_preview(db: AsyncSession, category_id: UUID) -> dict:
     """Return impact stats for a category before deletion (cascade effects)."""
-    # Number of distinct users who have unlocked this category
     unlocked_users_result = await db.execute(
         select(func.count())
         .select_from(UserUnlockedCategory)
@@ -65,7 +62,6 @@ async def get_delete_preview(db: AsyncSession, category_id: UUID) -> dict:
     )
     unlocked_users_count = unlocked_users_result.scalar() or 0
 
-    # Number of roadmap nodes belonging to this category
     nodes_result = await db.execute(
         select(func.count())
         .select_from(RoadmapNode)
@@ -73,7 +69,6 @@ async def get_delete_preview(db: AsyncSession, category_id: UUID) -> dict:
     )
     nodes_count = nodes_result.scalar() or 0
 
-    # Number of user_completed_nodes rows for nodes in this category
     completed_rows_result = await db.execute(
         select(func.count())
         .select_from(UserCompletedNode)

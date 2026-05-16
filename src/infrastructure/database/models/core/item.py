@@ -2,8 +2,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import Text, text, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from database.connection import Base
-from database.models.enums import ItemTag
+from infrastructure.database.connection import Base
+from infrastructure.database.models.enums import ItemTag
 
 class Item(Base):
     __tablename__ = "items"
