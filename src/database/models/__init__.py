@@ -6,6 +6,8 @@ from database.models.recipe.recipe_ingredient import RecipeIngredient
 from database.models.recipe.recipe_step import RecipeStep
 from database.models.recipe.step_ingredient import StepIngredient
 from database.models.recipe.step_item import StepItem
+from database.models.roadmap.category import Category
+from database.models.roadmap.roadmap_node import RoadmapNode
 
 __all__ = [
     "Language",
@@ -19,4 +21,6 @@ __all__ = [
     "RecipeStep",
     "StepIngredient",
     "StepItem",
+    "Category",
+    "RoadmapNode",
 ]

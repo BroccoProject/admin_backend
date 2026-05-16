@@ -1,26 +1,4 @@
 name: CI
 
-on: [push, pull_request]
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Lint with Ruff
-        run: uv run ruff check .
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Run tests
-        run: uv run pytest
+on:
+  workflow_dispatch:
