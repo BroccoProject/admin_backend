@@ -1,6 +1,7 @@
 from database.models.enums import Language, ItemTag, DifficultyLevel, IngredientAction
 from database.models.core.ingredient import Ingredient
 from database.models.core.item import Item
+from database.models.core.profile import Profile
 from database.models.recipe.recipe import Recipe
 from database.models.recipe.recipe_ingredient import RecipeIngredient
 from database.models.recipe.recipe_step import RecipeStep
@@ -27,4 +28,5 @@ __all__ = [
     "RoadmapNode",
     "UserUnlockedCategory",
     "UserCompletedNode",
+    "Profile",
 ]

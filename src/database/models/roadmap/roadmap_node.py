@@ -9,7 +9,7 @@ class RoadmapNode(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4, server_default=text("gen_random_uuid()"))
     category_id: Mapped[UUID | None] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
-    recipe_id: Mapped[UUID | None] = mapped_column(ForeignKey("recipes.id", ondelete="SET NULL"))
+    recipe_id: Mapped[UUID | None] = mapped_column(ForeignKey("recipes.id", ondelete="RESTRICT"))
     title: Mapped[str] = mapped_column(Text, nullable=False)
     preview_image_url: Mapped[str | None] = mapped_column(Text)
     map_column: Mapped[int] = mapped_column(Integer, nullable=False)
