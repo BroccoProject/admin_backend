@@ -2,6 +2,7 @@ from infrastructure.database.models.enums import Language, ItemTag, DifficultyLe
 from infrastructure.database.models.core.ingredient import Ingredient
 from infrastructure.database.models.core.item import Item
 from infrastructure.database.models.core.profile import Profile
+from infrastructure.database.models.core.chat_history import ChatHistory
 from infrastructure.database.models.recipe.recipe import Recipe
 from infrastructure.database.models.recipe.recipe_ingredient import RecipeIngredient
 from infrastructure.database.models.recipe.recipe_step import RecipeStep
@@ -29,4 +30,5 @@ __all__ = [
     "UserUnlockedCategory",
     "UserCompletedNode",
     "Profile",
+    "ChatHistory",
 ]

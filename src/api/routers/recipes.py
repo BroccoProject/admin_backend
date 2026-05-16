@@ -5,12 +5,26 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.database.connection import get_db
+from api.dependencies import get_db
 from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview
+from api.schemas.recipe_draft import RecipeDraft
 from services.recipes import crud as recipe_crud
+from services.recipes.save_recipe import create_recipe_from_draft
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
+@router.post("", response_model=dict)
+async def create_recipe(
+    draft: RecipeDraft,
+    db: AsyncSession = Depends(get_db)
+):
+    """Save a fully parsed and verified recipe draft to the database."""
+    try:
+        recipe_id = await create_recipe_from_draft(db, draft)
+        return {"id": recipe_id, "status": "success"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error saving recipe: {str(e)}")
 
 @router.get("", response_model=RecipeListResponse)
 async def list_recipes(

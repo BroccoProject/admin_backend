@@ -12,7 +12,7 @@ class StepIngredient(Base):
     ingredient_id: Mapped[UUID] = mapped_column(ForeignKey("ingredients.id"), nullable=False)
     amount: Mapped[float | None] = mapped_column(Numeric)
     unit: Mapped[str | None] = mapped_column(Text)
-    actions: Mapped[list[IngredientAction] | None] = mapped_column(ARRAY(SQLEnum(IngredientAction, name="ingredient_action_enum")), server_default=text("'{}'::ingredient_action_enum[]"))
+    actions: Mapped[list[IngredientAction] | None] = mapped_column(ARRAY(SQLEnum(IngredientAction, name="ingredient_action_enum", values_callable=lambda x: [e.value for e in x])), server_default=text("'{}'::ingredient_action_enum[]"))
 
     __table_args__ = (
         UniqueConstraint("step_id", "ingredient_id", name="step_ingredients_unique"),

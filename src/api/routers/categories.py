@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.database.connection import get_db
+from api.dependencies import get_db
 from api.schemas.category import (
     CategoryCreate,
     CategoryUpdate,
