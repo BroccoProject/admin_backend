@@ -24,7 +24,7 @@ async def create_recipe_from_draft(db: AsyncSession, draft: RecipeDraft) -> UUID
         description=draft.description,
         description_i18n=draft.description_i18n,
         image_url=draft.image_url,
-        difficulty_level=draft.difficulty_level,
+        difficulty_level=draft.difficulty,
         duration_minutes=draft.duration_minutes,
         youtube_url=draft.youtube_url,
         tags=draft.tags,

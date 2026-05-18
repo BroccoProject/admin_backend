@@ -3,14 +3,14 @@ from infrastructure.database.models.enums import Language, ItemTag, DifficultyLe
 
 class RecipeIngredientDraft(BaseModel):
     name: str
-    amount: float | None = None
-    unit: str | None = None
+    amount: float
+    unit: str
     sort_order: int = 0
 
 class StepIngredientDraft(BaseModel):
     name: str
-    amount: float | None = None
-    unit: str | None = None
+    amount: float
+    unit: str
     actions: list[IngredientAction] = Field(default_factory=list)
     name_i18n: dict[Language, str] = Field(default_factory=dict)
 
@@ -29,10 +29,10 @@ class RecipeStepDraft(BaseModel):
 
 class RecipeDraft(BaseModel):
     title: str
-    description: str | None = None
-    difficulty_level: DifficultyLevel | None = None
-    duration_minutes: int | None = None
-    category: str | None = None
+    description: str
+    difficulty: DifficultyLevel
+    duration_minutes: int
+    category: str
     area: str | None = None
     tags: list[str] = Field(default_factory=list)
     source_url: str | None = None
