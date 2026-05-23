@@ -6,6 +6,6 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str
     GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=[".env", "src/.env"])
 
 settings = Settings()
