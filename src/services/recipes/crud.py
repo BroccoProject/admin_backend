@@ -10,7 +10,7 @@ from infrastructure.database.models.recipe.step_ingredient import StepIngredient
 from infrastructure.database.models.recipe.step_item import StepItem
 from infrastructure.database.models.roadmap.roadmap_node import RoadmapNode
 from infrastructure.database.models.roadmap.category import Category
-from api.schemas.recipe import RecipeResponse, RecipeDeletePreview
+from api.schemas.recipe import RecipeResponse, RecipeDeletePreview, RecipeUpdate
 
 
 async def get_recipes(
@@ -153,6 +153,22 @@ async def get_delete_preview(db: AsyncSession, recipe_id: UUID) -> RecipeDeleteP
         roadmap_nodes=roadmap_nodes_count,
     )
 
+async def update_recipe(db: AsyncSession, recipe_id: UUID, update_data: RecipeUpdate) -> RecipeResponse | None:
+    """Update a recipe."""
+    result = await db.execute(select(Recipe).where(Recipe.id == recipe_id))
+    recipe = result.scalar_one_or_none()
+    if not recipe:
+        return None
+
+    update_dict = update_data.model_dump(exclude_unset=True)
+    for key, value in update_dict.items():
+        setattr(recipe, key, value)
+
+    await db.commit()
+    await db.refresh(recipe)
+
+    # We reuse get_recipe_by_id to populate any joined fields correctly
+    return await get_recipe_by_id(db, recipe_id)
 
 async def delete_recipe(db: AsyncSession, recipe_id: UUID) -> bool:
     """Delete a recipe. Returns True on success.

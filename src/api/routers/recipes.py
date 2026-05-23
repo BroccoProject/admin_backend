@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies import get_db
-from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview
+from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview, RecipeUpdate
 from api.schemas.recipe_draft import RecipeDraft
 from services.recipes import crud as recipe_crud
 from services.recipes.save_recipe import create_recipe_from_draft
@@ -72,6 +72,19 @@ async def get_recipe_delete_preview(
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return await recipe_crud.get_delete_preview(db, recipe_id)
+
+
+@router.patch("/{recipe_id}", response_model=RecipeResponse)
+async def update_recipe(
+    recipe_id: UUID,
+    update_data: RecipeUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a single recipe by ID."""
+    updated_recipe = await recipe_crud.update_recipe(db, recipe_id, update_data)
+    if not updated_recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    return updated_recipe
 
 
 @router.delete("/{recipe_id}", status_code=200)
