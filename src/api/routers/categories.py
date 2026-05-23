@@ -2,17 +2,16 @@ import math
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
+from domain.exceptions import ResourceInUseError
 
-from api.dependencies import get_db
 from api.schemas.category import (
     CategoryCreate,
     CategoryUpdate,
     CategoryResponse,
     CategoryListResponse,
 )
-from services.categories import crud as category_crud
+from services.categories.category_service import CategoryService
+from api.dependencies.services import get_category_service
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -24,11 +23,11 @@ async def list_categories(
     search: str | None = Query(None),
     sort_by: str = Query("title"),
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
-    db: AsyncSession = Depends(get_db),
+    service: CategoryService = Depends(get_category_service),
 ):
     """List categories with pagination, search, and sorting."""
-    categories, total = await category_crud.get_categories(
-        db, page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
+    categories, total = await service.get_categories(
+        page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
     )
     total_pages = max(1, math.ceil(total / page_size))
 
@@ -44,10 +43,10 @@ async def list_categories(
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(
     category_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: CategoryService = Depends(get_category_service),
 ):
     """Get a single category by ID."""
-    category = await category_crud.get_category_by_id(db, category_id)
+    category = await service.get_category_by_id(category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     return CategoryResponse.model_validate(category)
@@ -56,23 +55,23 @@ async def get_category(
 @router.get("/{category_id}/delete-preview")
 async def get_category_delete_preview(
     category_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: CategoryService = Depends(get_category_service),
 ):
     """Return cascade impact counts before deleting a category."""
-    category = await category_crud.get_category_by_id(db, category_id)
+    category = await service.get_category_by_id(category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
-    preview = await category_crud.get_delete_preview(db, category_id)
+    preview = await service.get_delete_preview(category_id)
     return preview
 
 
 @router.post("", response_model=CategoryResponse, status_code=201)
 async def create_category(
     data: CategoryCreate,
-    db: AsyncSession = Depends(get_db),
+    service: CategoryService = Depends(get_category_service),
 ):
     """Create a new category."""
-    category = await category_crud.create_category(db, data)
+    category = await service.create_category(data.model_dump())
     return CategoryResponse.model_validate(category)
 
 
@@ -80,10 +79,10 @@ async def create_category(
 async def update_category(
     category_id: UUID,
     data: CategoryUpdate,
-    db: AsyncSession = Depends(get_db),
+    service: CategoryService = Depends(get_category_service),
 ):
     """Partially update a category."""
-    category = await category_crud.update_category(db, category_id, data)
+    category = await service.update_category(category_id, data.model_dump(exclude_unset=True))
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     return CategoryResponse.model_validate(category)
@@ -92,17 +91,16 @@ async def update_category(
 @router.delete("/{category_id}", status_code=200)
 async def delete_category(
     category_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: CategoryService = Depends(get_category_service),
 ):
     """Delete a category. Returns an error message if constrained by related data."""
     try:
-        deleted = await category_crud.delete_category(db, category_id)
+        deleted = await service.delete_category(category_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Category not found")
         return {"detail": "Category deleted successfully"}
-    except IntegrityError as e:
-        await db.rollback()
-        error_msg = str(e.orig) if hasattr(e, "orig") and e.orig else str(e)
+    except ResourceInUseError as e:
+        error_msg = e.detail or str(e)
         if "DETAIL:" in error_msg:
             detail_part = error_msg.split("DETAIL:")[1].strip()
             detail = f"Cannot delete category: {detail_part}"

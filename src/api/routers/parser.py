@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from infrastructure.ai.interfaces import IRecipeParserAgent
 from api.schemas.parser import ParseRequest, ParseResponse, FeedbackRequest
 from services.recipes.parse_recipe import start_recipe_parsing, provide_recipe_feedback
-from api.dependencies import get_agent
+from api.dependencies.agent import get_agent
 
 router = APIRouter(prefix="/parser", tags=["Parser"])
 
