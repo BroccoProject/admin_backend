@@ -10,8 +10,8 @@ class AccessRequest(AdminBase):
     __tablename__ = "access_requests"
     __table_args__ = (
         Index(
-            "ix_access_requests_google_sub_pending",
-            "google_sub",
+            "ix_access_requests_email_pending",
+            "email",
             unique=True,
             postgresql_where=text("status = 'pending'")
         ),
@@ -20,7 +20,6 @@ class AccessRequest(AdminBase):
     id: Mapped[UUID] = mapped_column(
         primary_key=True, default=uuid4, server_default=text("gen_random_uuid()")
     )
-    google_sub: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(

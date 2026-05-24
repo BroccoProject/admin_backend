@@ -3,10 +3,11 @@ from infrastructure.ai.interfaces import IRecipeParserAgent
 from api.schemas.parser import ParseRequest, ParseResponse, FeedbackRequest
 from services.recipes.parse_recipe import start_recipe_parsing, provide_recipe_feedback
 from api.dependencies.agent import get_agent
+from api.dependencies.auth import CanRunAgent
 
 router = APIRouter(prefix="/parser", tags=["Parser"])
 
-@router.post("", response_model=ParseResponse)
+@router.post("", response_model=ParseResponse, dependencies=[CanRunAgent])
 async def start_parsing(
     req: ParseRequest,
     agent: IRecipeParserAgent = Depends(get_agent)
@@ -21,7 +22,7 @@ async def start_parsing(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Parsing error: {str(e)}")
 
-@router.post("/{thread_id}", response_model=ParseResponse)
+@router.post("/{thread_id}", response_model=ParseResponse, dependencies=[CanRunAgent])
 async def provide_feedback(
     thread_id: str,
     req: FeedbackRequest,

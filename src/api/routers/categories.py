@@ -12,11 +12,12 @@ from api.schemas.category import (
 )
 from services.categories.category_service import CategoryService
 from api.dependencies.services import get_category_service
+from api.dependencies.auth import CanReadRecipes, CanManageUsers
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
-@router.get("", response_model=CategoryListResponse)
+@router.get("", response_model=CategoryListResponse, dependencies=[CanReadRecipes])
 async def list_categories(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
@@ -40,7 +41,7 @@ async def list_categories(
     )
 
 
-@router.get("/{category_id}", response_model=CategoryResponse)
+@router.get("/{category_id}", response_model=CategoryResponse, dependencies=[CanReadRecipes])
 async def get_category(
     category_id: UUID,
     service: CategoryService = Depends(get_category_service),
@@ -52,7 +53,7 @@ async def get_category(
     return CategoryResponse.model_validate(category)
 
 
-@router.get("/{category_id}/delete-preview")
+@router.get("/{category_id}/delete-preview", dependencies=[CanReadRecipes])
 async def get_category_delete_preview(
     category_id: UUID,
     service: CategoryService = Depends(get_category_service),
@@ -65,7 +66,7 @@ async def get_category_delete_preview(
     return preview
 
 
-@router.post("", response_model=CategoryResponse, status_code=201)
+@router.post("", response_model=CategoryResponse, status_code=201, dependencies=[CanManageUsers])
 async def create_category(
     data: CategoryCreate,
     service: CategoryService = Depends(get_category_service),
@@ -75,7 +76,7 @@ async def create_category(
     return CategoryResponse.model_validate(category)
 
 
-@router.patch("/{category_id}", response_model=CategoryResponse)
+@router.patch("/{category_id}", response_model=CategoryResponse, dependencies=[CanManageUsers])
 async def update_category(
     category_id: UUID,
     data: CategoryUpdate,
@@ -88,7 +89,7 @@ async def update_category(
     return CategoryResponse.model_validate(category)
 
 
-@router.delete("/{category_id}", status_code=200)
+@router.delete("/{category_id}", status_code=200, dependencies=[CanManageUsers])
 async def delete_category(
     category_id: UUID,
     service: CategoryService = Depends(get_category_service),

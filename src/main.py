@@ -5,6 +5,7 @@ from api.routers.categories import router as categories_router
 from api.routers.recipes import router as recipes_router
 from api.routers.parser import router as parser_router
 from api.routers.auth import router as auth_router
+from api.routers.access_requests import router as access_requests_router
 
 app = FastAPI(title="Brokulak Admin Panel API", version="0.1.0")
 
@@ -23,6 +24,7 @@ app.include_router(categories_router, prefix="/api/v1")
 app.include_router(recipes_router, prefix="/api/v1")
 app.include_router(parser_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(access_requests_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

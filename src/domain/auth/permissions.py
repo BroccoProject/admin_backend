@@ -8,17 +8,19 @@ class Permission(str, Enum):
     USER_MANAGE = "user_manage"
     AGENT_RUN = "agent_run"
 
-ROLE_PERMISSIONS: dict[UserRole, set[Permission]] = {
-    UserRole.EDITOR: {
+ROLE_PERMISSIONS = {
+    "viewer": set(),
+    "editor": {
         Permission.RECIPE_READ,
         Permission.RECIPE_WRITE,
+        Permission.AGENT_RUN,
     },
-    UserRole.ADMIN: {
+    "admin": {
         Permission.RECIPE_READ,
         Permission.RECIPE_WRITE,
         Permission.RECIPE_DELETE,
-        Permission.USER_MANAGE,
         Permission.AGENT_RUN,
+        Permission.USER_MANAGE,
     },
 }
 

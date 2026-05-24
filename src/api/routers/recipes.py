@@ -8,10 +8,11 @@ from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeleteP
 from api.schemas.recipe_draft import RecipeDraft
 from services.recipes.recipe_service import RecipeService
 from api.dependencies.services import get_recipe_service
+from api.dependencies.auth import CanReadRecipes, CanWriteRecipes, CanManageUsers
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
-@router.post("", response_model=dict)
+@router.post("", response_model=dict, dependencies=[CanWriteRecipes])
 async def create_recipe(
     draft: RecipeDraft,
     service: RecipeService = Depends(get_recipe_service)
@@ -24,7 +25,7 @@ async def create_recipe(
         # TODO: Better exception handling mapped to domain layer
         raise HTTPException(status_code=500, detail=f"Error saving recipe: {str(e)}")
 
-@router.get("", response_model=RecipeListResponse)
+@router.get("", response_model=RecipeListResponse, dependencies=[CanReadRecipes])
 async def list_recipes(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
@@ -48,7 +49,7 @@ async def list_recipes(
     )
 
 
-@router.get("/{recipe_id}", response_model=RecipeResponse)
+@router.get("/{recipe_id}", response_model=RecipeResponse, dependencies=[CanReadRecipes])
 async def get_recipe(
     recipe_id: UUID,
     service: RecipeService = Depends(get_recipe_service),
@@ -60,7 +61,7 @@ async def get_recipe(
     return RecipeResponse.model_validate(recipe)
 
 
-@router.get("/{recipe_id}/delete-preview", response_model=RecipeDeletePreview)
+@router.get("/{recipe_id}/delete-preview", response_model=RecipeDeletePreview, dependencies=[CanReadRecipes])
 async def get_recipe_delete_preview(
     recipe_id: UUID,
     service: RecipeService = Depends(get_recipe_service),
@@ -80,7 +81,7 @@ async def get_recipe_delete_preview(
     )
 
 
-@router.patch("/{recipe_id}", response_model=RecipeResponse)
+@router.patch("/{recipe_id}", response_model=RecipeResponse, dependencies=[CanManageUsers])
 async def update_recipe(
     recipe_id: UUID,
     update_data: RecipeUpdate,
@@ -93,7 +94,7 @@ async def update_recipe(
     return RecipeResponse.model_validate(updated_recipe)
 
 
-@router.delete("/{recipe_id}", status_code=200)
+@router.delete("/{recipe_id}", status_code=200, dependencies=[CanManageUsers])
 async def delete_recipe(
     recipe_id: UUID,
     service: RecipeService = Depends(get_recipe_service),
