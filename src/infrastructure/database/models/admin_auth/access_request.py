@@ -4,31 +4,27 @@ from sqlalchemy import String, Text, Boolean, text, ForeignKey, Enum as SAEnum, 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 
-from infrastructure.database.connection import Base
+from infrastructure.database.connection_admin import AdminBase
 
-class AccessRequest(Base):
+class AccessRequest(AdminBase):
     __tablename__ = "access_requests"
     __table_args__ = (
         Index(
-            "ix_admin_auth_access_requests_user_id_pending",
-            "user_id",
+            "ix_access_requests_google_sub_pending",
+            "google_sub",
             unique=True,
             postgresql_where=text("status = 'pending'")
         ),
-        {"schema": "admin_auth"},
     )
 
     id: Mapped[UUID] = mapped_column(
         primary_key=True, default=uuid4, server_default=text("gen_random_uuid()")
     )
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("auth.users.id", ondelete="CASCADE", use_alter=True),
-        nullable=False
-    )
+    google_sub: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
-        SAEnum('pending', 'approved', 'rejected', name='access_request_status', schema='admin_auth'),
+        SAEnum('pending', 'approved', 'rejected', name='access_request_status'),
         nullable=False,
         server_default='pending'
     )
@@ -51,6 +47,6 @@ class AccessRequest(Base):
         TIMESTAMP(timezone=True), nullable=True
     )
     resolved_by: Mapped[UUID | None] = mapped_column(
-        ForeignKey("admin_auth.admin_profiles.id", ondelete="SET NULL"),
+        ForeignKey("admin_profiles.id", ondelete="SET NULL"),
         nullable=True
     )

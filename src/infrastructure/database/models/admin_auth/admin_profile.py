@@ -4,23 +4,18 @@ from sqlalchemy import String, text, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, TIMESTAMP
 
-from infrastructure.database.connection import Base
+from infrastructure.database.connection_admin import AdminBase
 
-class AdminProfile(Base):
+class AdminProfile(AdminBase):
     __tablename__ = "admin_profiles"
-    __table_args__ = {"schema": "admin_auth"}
 
     id: Mapped[UUID] = mapped_column(
         primary_key=True, default=uuid4, server_default=text("gen_random_uuid()")
     )
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("auth.users.id", ondelete="CASCADE", use_alter=True),
-        nullable=False,
-        unique=True
-    )
+    google_sub: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     email: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(
-        SAEnum('editor', 'admin', name='admin_role', schema='admin_auth'),
+        SAEnum('editor', 'admin', name='admin_role'),
         nullable=False,
         server_default='editor'
     )
@@ -28,7 +23,7 @@ class AdminProfile(Base):
         TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False
     )
     created_by: Mapped[UUID | None] = mapped_column(
-        ForeignKey("admin_auth.admin_profiles.id", ondelete="SET NULL"),
+        ForeignKey("admin_profiles.id", ondelete="SET NULL"),
         nullable=True
     )
 

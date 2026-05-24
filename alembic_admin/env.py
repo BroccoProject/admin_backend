@@ -1,0 +1,101 @@
+import asyncio
+from logging.config import fileConfig
+
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
+import sqlalchemy as sa
+from core.config import settings
+
+# Import only admin_auth models to avoid registering others to target_metadata
+from infrastructure.database.connection_admin import AdminBase
+from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
+from infrastructure.database.models.admin_auth.access_request import AccessRequest
+
+config = context.config
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_ADMIN)
+
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = AdminBase.metadata
+
+# For the admin database, we don't need custom schemas as isolation is enough
+MANAGED_SCHEMAS = {"public"}
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table":
+        full_name = f"{object.schema}.{name}" if hasattr(object, "schema") and object.schema else name
+        clean_name = name.split(".")[-1]
+        in_metadata = (
+            name in target_metadata.tables
+            or clean_name in target_metadata.tables
+            or full_name in target_metadata.tables
+        )
+        if hasattr(object, "schema") and object.schema and object.schema not in MANAGED_SCHEMAS:
+            return False
+        return in_metadata
+
+    if type_ in ("foreign_key", "constraint") and hasattr(object, "table"):
+        t_name = object.table.name.split(".")[-1]
+        return t_name in target_metadata.tables
+
+    return True
+
+
+def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
+        include_schemas=True,
+        compare_type=True,
+        compare_server_default=True,
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+        include_schemas=True,
+        compare_type=True,
+        compare_server_default=True,
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+        connect_args={"statement_cache_size": 0}
+    )
+
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+        await connection.commit()
+
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
