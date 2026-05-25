@@ -21,6 +21,16 @@ class AdminService:
         await send_email(settings.ADMIN_EMAIL, subject, body)
         return req
 
+    async def get_auth_status_for_email(self, email: str) -> str:
+        request = await self.repository.get_access_request_by_email(email)
+        if not request:
+            return 'not_registered'
+        if request.status == 'pending':
+            return 'waiting_approval'
+        if request.status == 'rejected':
+            return 'access_rejected'
+        return 'not_registered'
+
     async def approve_via_token(self, token: UUID) -> AdminProfile:
         req = await self.repository.get_access_request_by_token(token)
         if not req:

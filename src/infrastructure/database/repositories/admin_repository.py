@@ -64,6 +64,13 @@ class SQLAdminRepository:
         result = await self.db.execute(select(AccessRequest).where(AccessRequest.token == token))
         return result.scalar_one_or_none()
 
+    async def get_access_request_by_email(self, email: str):
+        from infrastructure.database.models.admin_auth.access_request import AccessRequest
+        result = await self.db.execute(
+            select(AccessRequest).where(AccessRequest.email == email).order_by(AccessRequest.created_at.desc()).limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def get_access_requests(self, status: str | None = None):
         from infrastructure.database.models.admin_auth.access_request import AccessRequest
         query = select(AccessRequest).order_by(AccessRequest.created_at.desc())
