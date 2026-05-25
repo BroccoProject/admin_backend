@@ -28,14 +28,24 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
     user_info = await get_google_user_info(access_token)
     print(f"DEBUG google_sub: {user_info.get('sub')}")
     google_sub = user_info.get("sub")
-    if not google_sub:
+    email = user_info.get("email")
+    if not google_sub or not email:
         raise HTTPException(status_code=400, detail="Invalid user info from Google")
         
     repo = SQLAdminRepository(db)
     admin_user = await repo.get_by_google_sub(google_sub)
     
     if not admin_user:
-        raise HTTPException(status_code=403, detail="Not authorized as admin panel user")
+        from services.admin.admin_service import AdminService
+        from core.config import settings
+        from urllib.parse import urlencode
+        
+        admin_service = AdminService(repo)
+        status = await admin_service.get_auth_status_for_email(email)
+        
+        params = urlencode({"status": status})
+        redirect_url = f"{settings.FRONTEND_URL}/auth/pending?{params}"
+        return RedirectResponse(url=redirect_url)
         
     jwt_token = create_jwt(admin_user.id, admin_user.role.value)
     
