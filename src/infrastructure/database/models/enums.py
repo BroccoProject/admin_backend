@@ -15,9 +15,9 @@ class ItemTag(StrEnum):
     OTHER = "other"
 
 class DifficultyLevel(StrEnum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
+    BEGINNER = "Beginner"
+    INTERMEDIATE = "Intermediate"
+    MASTER_CHEF = "Master Chef"
 
 class IngredientAction(StrEnum):
     ADD = "add"
