@@ -2,47 +2,46 @@ import math
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
+from domain.exceptions import ResourceInUseError
 
-from api.dependencies import get_db
 from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview, RecipeUpdate
 from api.schemas.recipe_draft import RecipeDraft
-from services.recipes import crud as recipe_crud
-from services.recipes.save_recipe import create_recipe_from_draft
+from services.recipes.recipe_service import RecipeService
+from api.dependencies.services import get_recipe_service
+from api.dependencies.auth import CanReadRecipes, CanWriteRecipes, CanManageUsers
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
-@router.post("", response_model=dict)
+@router.post("", response_model=dict, dependencies=[CanWriteRecipes])
 async def create_recipe(
     draft: RecipeDraft,
-    db: AsyncSession = Depends(get_db)
+    service: RecipeService = Depends(get_recipe_service)
 ):
     """Save a fully parsed and verified recipe draft to the database."""
     try:
-        recipe_id = await create_recipe_from_draft(db, draft)
+        recipe_id = await service.create_recipe_from_draft(draft)
         return {"id": recipe_id, "status": "success"}
     except Exception as e:
-        await db.rollback()
+        # TODO: Better exception handling mapped to domain layer
         raise HTTPException(status_code=500, detail=f"Error saving recipe: {str(e)}")
 
-@router.get("", response_model=RecipeListResponse)
+@router.get("", response_model=RecipeListResponse, dependencies=[CanReadRecipes])
 async def list_recipes(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     search: str | None = Query(None),
     sort_by: str = Query("title"),
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
-    db: AsyncSession = Depends(get_db),
+    service: RecipeService = Depends(get_recipe_service),
 ):
     """List recipes with pagination, search, and sorting."""
-    recipes, total = await recipe_crud.get_recipes(
-        db, page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
+    recipes, total = await service.get_recipes(
+        page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
     )
     total_pages = max(1, math.ceil(total / page_size))
 
     return RecipeListResponse(
-        items=recipes,
+        items=[RecipeResponse.model_validate(r) for r in recipes],
         total=total,
         page=page,
         page_size=page_size,
@@ -50,57 +49,64 @@ async def list_recipes(
     )
 
 
-@router.get("/{recipe_id}", response_model=RecipeResponse)
+@router.get("/{recipe_id}", response_model=RecipeResponse, dependencies=[CanReadRecipes])
 async def get_recipe(
     recipe_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: RecipeService = Depends(get_recipe_service),
 ):
     """Get a single recipe by ID."""
-    recipe = await recipe_crud.get_recipe_by_id(db, recipe_id)
+    recipe = await service.get_recipe_by_id(recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return recipe
+    return RecipeResponse.model_validate(recipe)
 
 
-@router.get("/{recipe_id}/delete-preview", response_model=RecipeDeletePreview)
+@router.get("/{recipe_id}/delete-preview", response_model=RecipeDeletePreview, dependencies=[CanReadRecipes])
 async def get_recipe_delete_preview(
     recipe_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: RecipeService = Depends(get_recipe_service),
 ):
     """Return cascade impact counts before deleting a recipe."""
-    recipe = await recipe_crud.get_recipe_by_id(db, recipe_id)
+    recipe = await service.get_recipe_by_id(recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return await recipe_crud.get_delete_preview(db, recipe_id)
+    
+    preview = await service.get_delete_preview(recipe_id)
+    return RecipeDeletePreview(
+        recipe_ingredients=preview.recipe_ingredients,
+        steps=preview.steps,
+        step_ingredients=preview.step_ingredients,
+        step_items=preview.step_items,
+        roadmap_nodes=preview.roadmap_nodes,
+    )
 
 
-@router.patch("/{recipe_id}", response_model=RecipeResponse)
+@router.patch("/{recipe_id}", response_model=RecipeResponse, dependencies=[CanManageUsers])
 async def update_recipe(
     recipe_id: UUID,
     update_data: RecipeUpdate,
-    db: AsyncSession = Depends(get_db),
+    service: RecipeService = Depends(get_recipe_service),
 ):
     """Update a single recipe by ID."""
-    updated_recipe = await recipe_crud.update_recipe(db, recipe_id, update_data)
+    updated_recipe = await service.update_recipe(recipe_id, update_data.model_dump(exclude_unset=True))
     if not updated_recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return updated_recipe
+    return RecipeResponse.model_validate(updated_recipe)
 
 
-@router.delete("/{recipe_id}", status_code=200)
+@router.delete("/{recipe_id}", status_code=200, dependencies=[CanManageUsers])
 async def delete_recipe(
     recipe_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    service: RecipeService = Depends(get_recipe_service),
 ):
     """Delete a recipe. Returns 409 if blocked by a roadmap node reference."""
     try:
-        deleted = await recipe_crud.delete_recipe(db, recipe_id)
+        deleted = await service.delete_recipe(recipe_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Recipe not found")
         return {"detail": "Recipe deleted successfully"}
-    except IntegrityError as e:
-        await db.rollback()
-        error_msg = str(e.orig) if hasattr(e, "orig") and e.orig else str(e)
+    except ResourceInUseError as e:
+        error_msg = e.detail or str(e)
         if "DETAIL:" in error_msg:
             detail_part = error_msg.split("DETAIL:")[1].strip()
             detail = f"Cannot delete recipe: {detail_part}"
