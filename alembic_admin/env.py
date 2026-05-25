@@ -8,19 +8,22 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 import sqlalchemy as sa
 from core.config import settings
-from infrastructure.database.connection import Base
-import infrastructure.database.models  # Register all models with Base.metadata
+
+# Import only admin_auth models to avoid registering others to target_metadata
+from infrastructure.database.connection_admin import AdminBase
+from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
+from infrastructure.database.models.admin_auth.access_request import AccessRequest
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_ADMIN)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = AdminBase.metadata
 
-MANAGED_SCHEMAS = {"public", "admin_auth"}
-
+# For the admin database, we don't need custom schemas as isolation is enough
+MANAGED_SCHEMAS = {"public"}
 
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "table":
@@ -60,9 +63,6 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    for schema in MANAGED_SCHEMAS - {"public"}:
-        connection.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
-
     context.configure(
         connection=connection,
         target_metadata=target_metadata,

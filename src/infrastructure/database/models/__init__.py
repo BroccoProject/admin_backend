@@ -12,6 +12,8 @@ from infrastructure.database.models.roadmap.category import Category
 from infrastructure.database.models.roadmap.roadmap_node import RoadmapNode
 from infrastructure.database.models.roadmap.user_unlocked_category import UserUnlockedCategory
 from infrastructure.database.models.roadmap.user_completed_node import UserCompletedNode
+from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
+from infrastructure.database.models.admin_auth.access_request import AccessRequest
 
 __all__ = [
     "Language",
@@ -31,4 +33,6 @@ __all__ = [
     "UserCompletedNode",
     "Profile",
     "ChatHistory",
+    "AdminProfile",
+    "AccessRequest",
 ]

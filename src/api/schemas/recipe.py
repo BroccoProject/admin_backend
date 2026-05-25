@@ -31,3 +31,16 @@ class RecipeDeletePreview(BaseModel):
     step_ingredients: int
     step_items: int
     roadmap_nodes: int
+
+
+class RecipeUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    image_url: str | None = None
+    difficulty_level: str | None = None
+    duration_minutes: int | None = None
+    youtube_url: str | None = None
+    tags: list[str] | None = None
+    category: str | None = None
+    area: str | None = None
+    source_url: str | None = None
