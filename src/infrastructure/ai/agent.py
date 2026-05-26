@@ -16,18 +16,15 @@ class LangChainRecipeParserAgent(IRecipeParserAgent):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-        # Shared LLM base (temperature=0 for deterministic output)
         base_llm = ChatGoogleGenerativeAI(
             model=settings.GEMINI_MODEL,
             temperature=0,
             api_key=settings.GOOGLE_API_KEY,
         )
 
-        # Step 1: metadata extraction
         meta_llm = base_llm.with_structured_output(RecipeMetaDraft)
         meta_chain = META_PROMPT | meta_llm
 
-        # Step 2: steps + ingredients extraction (unchanged logic)
         body_llm = base_llm.with_structured_output(RecipeBodyDraft)
         body_chain = PARSE_PROMPT | body_llm
 
@@ -75,5 +72,4 @@ class LangChainRecipeParserAgent(IRecipeParserAgent):
 
 
 def get_parser_agent(db: AsyncSession) -> IRecipeParserAgent:
-    """Factory method to get an instance of the parser agent."""
     return LangChainRecipeParserAgent(db)

@@ -1,9 +1,5 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-# ---------------------------------------------------------------------------
-# Step 1 – recipe metadata prompt
-# ---------------------------------------------------------------------------
-
 META_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a culinary metadata extractor. \
 Given a recipe (text, URL content, or user description), extract ONLY the following metadata fields. \
@@ -40,10 +36,6 @@ Return valid JSON matching the schema exactly."""),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{input}"),
 ])
-
-# ---------------------------------------------------------------------------
-# Step 2 – steps / ingredients prompt (unchanged)
-# ---------------------------------------------------------------------------
 
 PARSE_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a culinary recipe parser. Extract structured data from recipe text.

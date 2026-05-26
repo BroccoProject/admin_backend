@@ -11,7 +11,6 @@ class RecipeResponse(BaseModel):
     category: str | None = None
     area: str | None = None
     tags: list[str] | None = None
-    # Populated via joined query, not a column
     roadmap_category_titles: list[str] = []
 
     model_config = ConfigDict(from_attributes=True)

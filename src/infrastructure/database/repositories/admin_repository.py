@@ -59,7 +59,6 @@ class SQLAdminRepository:
         )
 
     async def update_google_sub(self, admin_id: UUID, google_sub: str) -> AdminUser | None:
-        # Clear google_sub from any other profile to avoid unique constraint violations
         await self.db.execute(
             update(AdminProfile).where(AdminProfile.google_sub == google_sub).values(google_sub=None)
         )
@@ -97,7 +96,6 @@ class SQLAdminRepository:
         )
 
     async def create_access_request(self, email: str, message: str | None, user_id: UUID | None = None):
-        # Check for existing pending request for this email
         result = await self.db.execute(
             select(AccessRequest).where(
                 AccessRequest.email == email,

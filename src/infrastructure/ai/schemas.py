@@ -3,10 +3,6 @@ from pydantic import BaseModel, Field
 
 from infrastructure.database.models.enums import Language, ItemTag, DifficultyLevel, IngredientAction
 
-# ---------------------------------------------------------------------------
-# Step 1 – metadata schema
-# ---------------------------------------------------------------------------
-
 AllowedCategory = Literal[
     "Beef", "Breakfast", "Chicken", "Dessert", "Goat", "Lamb",
     "Miscellaneous", "Pasta", "Pork", "Seafood", "Side", "Starter",
@@ -53,10 +49,6 @@ class RecipeMetaDraft(BaseModel):
         description="Up to 10 relevant tags chosen strictly from the allowed list."
     )
 
-# ---------------------------------------------------------------------------
-# Step 2 – steps / ingredients schemas (unchanged)
-# ---------------------------------------------------------------------------
-
 class RecipeIngredientDraft(BaseModel):
     name: str
     amount: float = Field(description="The numeric amount/quantity of the ingredient.")
@@ -84,14 +76,10 @@ class RecipeStepDraft(BaseModel):
     items: list[StepItemDraft] = Field(default_factory=list)
 
 class RecipeBodyDraft(BaseModel):
-    """Structured output for step 2: only steps and ingredients."""
     ingredients: list[RecipeIngredientDraft] = Field(default_factory=list)
     steps: list[RecipeStepDraft] = Field(default_factory=list)
 
-
 class RecipeDraft(BaseModel):
-    """Final merged recipe draft combining step-1 metadata and step-2 body."""
-    # --- metadata (from step 1) ---
     title: str
     description: str
     difficulty: DifficultyLevel
@@ -102,18 +90,13 @@ class RecipeDraft(BaseModel):
     source_url: str | None = None
     image_url: str | None = None
     youtube_url: str | None = None
-
-    # --- body (from step 2) ---
     ingredients: list[RecipeIngredientDraft] = Field(default_factory=list)
     steps: list[RecipeStepDraft] = Field(default_factory=list)
-
-    # --- i18n ---
     title_i18n: dict[Language, str] = Field(default_factory=dict)
     description_i18n: dict[Language, str] = Field(default_factory=dict)
 
     @classmethod
     def from_steps(cls, meta: "RecipeMetaDraft", body: "RecipeBodyDraft") -> "RecipeDraft":
-        """Merge the two-step outputs into a single RecipeDraft."""
         return cls(
             title=meta.title,
             description=meta.description,

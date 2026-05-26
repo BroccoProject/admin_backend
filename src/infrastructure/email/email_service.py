@@ -31,9 +31,7 @@ async def send_email(to: str, subject: str, body: str) -> None:
         except Exception as e:
             logger.error(f"Failed to send email to {to}: {e}")
 
-    # Run the blocking SMTP call in a thread pool so it doesn't block the event loop
     loop = asyncio.get_running_loop()
-    # Using run_in_executor directly instead of awaiting it makes it fire-and-forget
     loop.run_in_executor(None, _send)
 
 def build_approval_request_email(requester_email: str, message: str | None, approve_url: str) -> tuple[str, str]:
