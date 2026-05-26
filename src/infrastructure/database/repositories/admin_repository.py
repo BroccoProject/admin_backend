@@ -1,8 +1,12 @@
 from uuid import UUID
-from sqlalchemy import select
+from datetime import datetime, timezone
+
+from fastapi import HTTPException
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
+from infrastructure.database.models.admin_auth.access_request import AccessRequest
 from domain.auth.models import AdminUser, UserRole
 
 class SQLAdminRepository:
@@ -55,7 +59,6 @@ class SQLAdminRepository:
         )
 
     async def update_google_sub(self, admin_id: UUID, google_sub: str) -> AdminUser | None:
-        from sqlalchemy import update
         # Clear google_sub from any other profile to avoid unique constraint violations
         await self.db.execute(
             update(AdminProfile).where(AdminProfile.google_sub == google_sub).values(google_sub=None)
@@ -79,7 +82,6 @@ class SQLAdminRepository:
         )
 
     async def create_viewer_profile(self, email: str, google_sub: str) -> AdminUser:
-        from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
         new_profile = AdminProfile(
             email=email,
             role="viewer",
@@ -95,9 +97,6 @@ class SQLAdminRepository:
         )
 
     async def create_access_request(self, email: str, message: str | None, user_id: UUID | None = None):
-        from fastapi import HTTPException
-        from infrastructure.database.models.admin_auth.access_request import AccessRequest
-        
         # Check for existing pending request for this email
         result = await self.db.execute(
             select(AccessRequest).where(
@@ -115,19 +114,16 @@ class SQLAdminRepository:
         return req
 
     async def get_access_request_by_token(self, token: UUID):
-        from infrastructure.database.models.admin_auth.access_request import AccessRequest
         result = await self.db.execute(select(AccessRequest).where(AccessRequest.token == token))
         return result.scalar_one_or_none()
 
     async def get_access_request_by_email(self, email: str):
-        from infrastructure.database.models.admin_auth.access_request import AccessRequest
         result = await self.db.execute(
             select(AccessRequest).where(AccessRequest.email == email).order_by(AccessRequest.created_at.desc()).limit(1)
         )
         return result.scalar_one_or_none()
 
     async def get_access_requests(self, status: str | None = None):
-        from infrastructure.database.models.admin_auth.access_request import AccessRequest
         query = select(AccessRequest).order_by(AccessRequest.created_at.desc())
         if status:
             query = query.where(AccessRequest.status == status)
@@ -135,14 +131,10 @@ class SQLAdminRepository:
         return list(result.scalars().all())
 
     async def get_access_request_by_id(self, request_id: UUID):
-        from infrastructure.database.models.admin_auth.access_request import AccessRequest
         result = await self.db.execute(select(AccessRequest).where(AccessRequest.id == request_id))
         return result.scalar_one_or_none()
 
     async def approve_access_request(self, request, resolved_by: UUID | None, bypass_expiry: bool = False) -> AdminProfile:
-        from fastapi import HTTPException
-        from datetime import datetime, timezone
-        
         is_expired = request.token_expires_at < datetime.now(timezone.utc)
         if request.status != "pending" or request.token_used or (is_expired and not bypass_expiry):
             raise HTTPException(status_code=400, detail="Invalid, used, or expired token.")
@@ -172,8 +164,6 @@ class SQLAdminRepository:
         return new_profile
 
     async def reject_access_request(self, request, resolved_by: UUID) -> None:
-        from fastapi import HTTPException
-        from datetime import datetime, timezone
         if request.status != "pending":
             raise HTTPException(status_code=400, detail="Request is not pending.")
             
