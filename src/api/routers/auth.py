@@ -1,9 +1,8 @@
-from fastapi import Request
-from infrastructure.auth.jwt_handler import decode_jwt
 from fastapi import APIRouter, Response, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from api.dependencies.db import get_admin_db
 from api.dependencies.auth import get_current_admin_user
 from api.dependencies.admin import get_admin_service
@@ -28,7 +27,6 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
         raise HTTPException(status_code=400, detail="No access token received from Google")
         
     user_info = await get_google_user_info(access_token)
-    print(f"DEBUG google_sub: {user_info.get('sub')}")
     google_sub = user_info.get("sub")
     email = user_info.get("email")
     if not google_sub or not email:
@@ -46,7 +44,7 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
         
     jwt_token = create_jwt(admin_user.id, admin_user.role.value)
     
-    response = RedirectResponse(url="http://localhost:4200/dashboard")
+    response = RedirectResponse(url=f"{settings.FRONTEND_URL}/dashboard")
     response.set_cookie(
         key="admin_session",
         value=jwt_token,
@@ -78,14 +76,3 @@ async def get_current_user_info(
         "role": current_user.role,
         "access_status": status
     }
-
-
-# tymczasowo w api/routers/auth.py
-@router.get("/auth/google/debug-sub")
-async def debug_sub(request: Request):
-    """TEMPORARY - remove before production"""
-    token = request.cookies.get("admin_session")
-    if not token:
-        return {"error": "no cookie"}
-    payload = decode_jwt(token)
-    return payload
