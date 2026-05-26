@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies.db import get_admin_db
 from api.dependencies.auth import get_current_admin_user
+from api.dependencies.admin import get_admin_service
+from services.admin.admin_service import AdminService
 from infrastructure.auth.google_oauth import get_google_auth_url, exchange_code_for_token, get_google_user_info
 from infrastructure.auth.jwt_handler import create_jwt
 from infrastructure.database.repositories.admin_repository import SQLAdminRepository
@@ -36,16 +38,11 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
     admin_user = await repo.get_by_google_sub(google_sub)
     
     if not admin_user:
-        from services.admin.admin_service import AdminService
-        from core.config import settings
-        from urllib.parse import urlencode
-        
-        admin_service = AdminService(repo)
-        status = await admin_service.get_auth_status_for_email(email)
-        
-        params = urlencode({"status": status})
-        redirect_url = f"{settings.FRONTEND_URL}/auth/pending?{params}"
-        return RedirectResponse(url=redirect_url)
+        admin_user = await repo.get_by_email(email)
+        if admin_user:
+            admin_user = await repo.update_google_sub(admin_user.id, google_sub)
+        else:
+            admin_user = await repo.create_viewer_profile(email=email, google_sub=google_sub)
         
     jwt_token = create_jwt(admin_user.id, admin_user.role.value)
     
@@ -71,8 +68,16 @@ async def delete_session(response: Response):
     return {"detail": "Logged out"}
 
 @router.get("/me")
-async def get_current_user_info(current_user: AdminUser = Depends(get_current_admin_user)):
-    return {"email": current_user.email, "role": current_user.role}
+async def get_current_user_info(
+    current_user: AdminUser = Depends(get_current_admin_user),
+    service: AdminService = Depends(get_admin_service)
+):
+    status = await service.get_auth_status_for_email(current_user.email)
+    return {
+        "email": current_user.email, 
+        "role": current_user.role,
+        "access_status": status
+    }
 
 
 # tymczasowo w api/routers/auth.py

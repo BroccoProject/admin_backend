@@ -39,6 +39,61 @@ class SQLAdminRepository:
             role=UserRole(profile.role)
         )
 
+    async def get_by_email(self, email: str) -> AdminUser | None:
+        result = await self.db.execute(
+            select(AdminProfile).where(AdminProfile.email == email).order_by(AdminProfile.created_at.desc()).limit(1)
+        )
+        profile = result.scalar_one_or_none()
+        
+        if not profile:
+            return None
+            
+        return AdminUser(
+            id=profile.id,
+            email=profile.email,
+            role=UserRole(profile.role)
+        )
+
+    async def update_google_sub(self, admin_id: UUID, google_sub: str) -> AdminUser | None:
+        from sqlalchemy import update
+        # Clear google_sub from any other profile to avoid unique constraint violations
+        await self.db.execute(
+            update(AdminProfile).where(AdminProfile.google_sub == google_sub).values(google_sub=None)
+        )
+        
+        result = await self.db.execute(
+            select(AdminProfile).where(AdminProfile.id == admin_id)
+        )
+        profile = result.scalar_one_or_none()
+        if not profile:
+            return None
+        
+        profile.google_sub = google_sub
+        await self.db.commit()
+        await self.db.refresh(profile)
+        
+        return AdminUser(
+            id=profile.id,
+            email=profile.email,
+            role=UserRole(profile.role)
+        )
+
+    async def create_viewer_profile(self, email: str, google_sub: str) -> AdminUser:
+        from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
+        new_profile = AdminProfile(
+            email=email,
+            role="viewer",
+            google_sub=google_sub
+        )
+        self.db.add(new_profile)
+        await self.db.commit()
+        await self.db.refresh(new_profile)
+        return AdminUser(
+            id=new_profile.id,
+            email=new_profile.email,
+            role=UserRole(new_profile.role)
+        )
+
     async def create_access_request(self, email: str, message: str | None, user_id: UUID | None = None):
         from fastapi import HTTPException
         from infrastructure.database.models.admin_auth.access_request import AccessRequest
@@ -97,12 +152,21 @@ class SQLAdminRepository:
         request.resolved_at = datetime.now(timezone.utc)
         request.resolved_by = resolved_by
 
-        new_profile = AdminProfile(
-            email=request.email,
-            role="editor",
-            google_sub=None # TODO: they will link their Google account on first login
-        )
-        self.db.add(new_profile)
+        result = await self.db.execute(select(AdminProfile).where(AdminProfile.email == request.email))
+        existing_profile = result.scalar_one_or_none()
+
+        if existing_profile:
+            existing_profile.role = "editor"
+            self.db.add(existing_profile)
+            new_profile = existing_profile
+        else:
+            new_profile = AdminProfile(
+                email=request.email,
+                role="editor",
+                google_sub=None # TODO: they will link their Google account on first login
+            )
+            self.db.add(new_profile)
+
         await self.db.commit()
         await self.db.refresh(new_profile)
         return new_profile

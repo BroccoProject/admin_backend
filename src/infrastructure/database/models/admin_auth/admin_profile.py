@@ -15,7 +15,7 @@ class AdminProfile(AdminBase):
     google_sub: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     email: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(
-        SAEnum('editor', 'admin', name='admin_role'),
+        SAEnum('editor', 'admin', 'viewer', name='admin_role'),
         nullable=False,
         server_default='editor'
     )
