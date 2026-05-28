@@ -19,7 +19,7 @@ async def login_via_google():
     auth_url = get_google_auth_url()
     return RedirectResponse(url=auth_url)
 
-@router.get("/google/callback")
+@router.get("/google/callback") #TODO zrobic serwis zamiast wywolywania repo bezposrednio w endpointcie
 async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_db)):
     token_response = await exchange_code_for_token(code)
     access_token = token_response.get("access_token")
@@ -33,7 +33,7 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
         raise HTTPException(status_code=400, detail="Invalid user info from Google")
         
     repo = SQLAdminRepository(db)
-    admin_user = await repo.get_by_google_sub(google_sub)
+    admin_user = await repo.get_by_google_sub(google_sub) 
     
     if not admin_user:
         admin_user = await repo.get_by_email(email)
@@ -49,7 +49,7 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
         key="admin_session",
         value=jwt_token,
         httponly=True,
-        secure=False, # Must be True in production
+        secure=False, # musi byc true na produkcji
         samesite="lax",
         max_age=3600,
     )
@@ -60,7 +60,7 @@ async def delete_session(response: Response):
     response.delete_cookie(
         key="admin_session",
         httponly=True,
-        secure=False, # Must be True in production
+        secure=False, # musi byc true na produkcji
         samesite="lax"
     )
     return {"detail": "Logged out"}
