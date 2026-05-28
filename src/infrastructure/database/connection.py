@@ -10,9 +10,6 @@ engine = create_async_engine(
     max_overflow=10,
     pool_recycle=1800,
     pool_pre_ping=True,
-    # Supabase uses PgBouncer in transaction mode, which does not support
-    # asyncpg's prepared statement cache. Disabling it avoids
-    # DuplicatePreparedStatementError on every connection checkout.
     connect_args={"statement_cache_size": 0},
 )
 

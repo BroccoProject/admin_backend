@@ -38,7 +38,6 @@ class AsyncSQLAlchemyChatMessageHistory(BaseChatMessageHistory):
         await self.db.commit()
 
     async def aclear(self) -> None:
-        # Optional: delete all messages for this session
         pass
 
     @property

@@ -9,7 +9,6 @@ from alembic import context
 import sqlalchemy as sa
 from core.config import settings
 
-# Import only admin_auth models to avoid registering others to target_metadata
 from infrastructure.database.connection_admin import AdminBase
 from infrastructure.database.models.admin_auth.admin_profile import AdminProfile
 from infrastructure.database.models.admin_auth.access_request import AccessRequest
@@ -22,7 +21,6 @@ if config.config_file_name is not None:
 
 target_metadata = AdminBase.metadata
 
-# For the admin database, we don't need custom schemas as isolation is enough
 MANAGED_SCHEMAS = {"public"}
 
 def include_object(object, name, type_, reflected, compare_to):

@@ -26,6 +26,3 @@ class AdminProfile(AdminBase):
         ForeignKey("admin_profiles.id", ondelete="SET NULL"),
         nullable=True
     )
-
-    # Relationships (Optional, but good for ORM navigation)
-    # creator = relationship("AdminProfile", remote_side=[id])

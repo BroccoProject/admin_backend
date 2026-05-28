@@ -9,7 +9,7 @@ from alembic import context
 import sqlalchemy as sa
 from core.config import settings
 from infrastructure.database.connection import Base
-import infrastructure.database.models  # Register all models with Base.metadata
+
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
