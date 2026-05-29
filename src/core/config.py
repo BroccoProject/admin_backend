@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
 
-    model_config = SettingsConfigDict(env_file=[".env", "src/.env"])
+    model_config = SettingsConfigDict(
+        env_file=[".env", "src/.env"],
+        extra="ignore"
+    )
 
 settings = Settings()
