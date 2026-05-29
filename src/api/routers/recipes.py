@@ -4,7 +4,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from domain.exceptions import ResourceInUseError
 
-from api.schemas.recipe import RecipeListResponse, RecipeResponse, RecipeDeletePreview, RecipeUpdate
+from api.schemas.recipe import (
+    RecipeListResponse, RecipeResponse, RecipeDeletePreview, RecipeUpdate,
+    RecipeDetailResponse, RecipeFullUpdate,
+    IngredientRef, IngredientListResponse,
+    ItemRef, ItemListResponse,
+)
 from api.schemas.recipe_draft import RecipeDraft
 from services.recipes.recipe_service import RecipeService
 from api.dependencies.services import get_recipe_service
@@ -32,11 +37,21 @@ async def list_recipes(
     search: str | None = Query(None),
     sort_by: str = Query("title"),
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
+    category: str | None = Query(None),
+    difficulty: str | None = Query(None),
+    tag: str | None = Query(None),
     service: RecipeService = Depends(get_recipe_service),
 ):
     """List recipes with pagination, search, and sorting."""
     recipes, total = await service.get_recipes(
-        page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
+        page=page,
+        page_size=page_size,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        category=category,
+        difficulty=difficulty,
+        tag=tag,
     )
     total_pages = max(1, math.ceil(total / page_size))
 
@@ -46,6 +61,28 @@ async def list_recipes(
         page=page,
         page_size=page_size,
         total_pages=total_pages,
+    )
+
+
+@router.get("/ingredients", response_model=IngredientListResponse, dependencies=[CanReadRecipes])
+async def list_all_ingredients(
+    service: RecipeService = Depends(get_recipe_service),
+):
+    """Return all ingredients for selection dropdowns."""
+    ingredients = await service.get_all_ingredients()
+    return IngredientListResponse(
+        items=[IngredientRef.model_validate(i) for i in ingredients]
+    )
+
+
+@router.get("/items", response_model=ItemListResponse, dependencies=[CanReadRecipes])
+async def list_all_items(
+    service: RecipeService = Depends(get_recipe_service),
+):
+    """Return all items for selection dropdowns."""
+    items = await service.get_all_items()
+    return ItemListResponse(
+        items=[ItemRef.model_validate(i) for i in items]
     )
 
 
@@ -59,6 +96,18 @@ async def get_recipe(
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return RecipeResponse.model_validate(recipe)
+
+
+@router.get("/{recipe_id}/detail", response_model=RecipeDetailResponse, dependencies=[CanReadRecipes])
+async def get_recipe_detail(
+    recipe_id: UUID,
+    service: RecipeService = Depends(get_recipe_service),
+):
+    """Get a single recipe with all nested ingredients, steps, step-ingredients, step-items."""
+    detail = await service.get_recipe_detail(recipe_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    return RecipeDetailResponse(**detail)
 
 
 @router.get("/{recipe_id}/delete-preview", response_model=RecipeDeletePreview, dependencies=[CanReadRecipes])
@@ -92,6 +141,19 @@ async def update_recipe(
     if not updated_recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return RecipeResponse.model_validate(updated_recipe)
+
+
+@router.put("/{recipe_id}/full", response_model=RecipeDetailResponse, dependencies=[CanWriteRecipes])
+async def update_recipe_full(
+    recipe_id: UUID,
+    update_data: RecipeFullUpdate,
+    service: RecipeService = Depends(get_recipe_service),
+):
+    """Full replacement update: top-level fields + all ingredients/steps/items."""
+    detail = await service.update_recipe_full(recipe_id, update_data)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    return RecipeDetailResponse(**detail)
 
 
 @router.delete("/{recipe_id}", status_code=200, dependencies=[CanManageUsers])

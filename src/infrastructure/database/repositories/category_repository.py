@@ -38,6 +38,8 @@ class SQLCategoryRepository(ICategoryRepository):
         search: str | None = None,
         sort_by: str = "title",
         sort_order: str = "asc",
+        category_area: str | None = None,
+        category_type: str | None = None,
     ) -> tuple[list[CategoryDomain], int]:
         query = select(Category)
         count_query = select(func.count()).select_from(Category)
@@ -46,6 +48,14 @@ class SQLCategoryRepository(ICategoryRepository):
             search_filter = Category.title.ilike(f"%{search}%")
             query = query.where(search_filter)
             count_query = count_query.where(search_filter)
+
+        if category_area:
+            query = query.where(Category.category_area == category_area)
+            count_query = count_query.where(Category.category_area == category_area)
+
+        if category_type:
+            query = query.where(Category.category_type == category_type)
+            count_query = count_query.where(Category.category_type == category_type)
 
         allowed_sort_fields = {"title", "category_area", "category_type", "total_nodes", "unlock_cost_stars"}
         if sort_by in allowed_sort_fields:

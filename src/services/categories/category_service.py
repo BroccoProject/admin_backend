@@ -15,6 +15,8 @@ class CategoryService:
         search: str | None = None,
         sort_by: str = "title",
         sort_order: str = "asc",
+        category_area: str | None = None,
+        category_type: str | None = None,
     ) -> tuple[list[CategoryDomain], int]:
         return await self.repository.get_categories(
             page=page,
@@ -22,6 +24,8 @@ class CategoryService:
             search=search,
             sort_by=sort_by,
             sort_order=sort_order,
+            category_area=category_area,
+            category_type=category_type,
         )
 
     async def get_category_by_id(self, category_id: UUID) -> CategoryDomain | None:

@@ -24,11 +24,19 @@ async def list_categories(
     search: str | None = Query(None),
     sort_by: str = Query("title"),
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
+    category_area: str | None = Query(None),
+    category_type: str | None = Query(None),
     service: CategoryService = Depends(get_category_service),
 ):
     """List categories with pagination, search, and sorting."""
     categories, total = await service.get_categories(
-        page=page, page_size=page_size, search=search, sort_by=sort_by, sort_order=sort_order
+        page=page,
+        page_size=page_size,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        category_area=category_area,
+        category_type=category_type,
     )
     total_pages = max(1, math.ceil(total / page_size))
 

@@ -11,6 +11,8 @@ class ICategoryRepository(abc.ABC):
         search: str | None = None,
         sort_by: str = "title",
         sort_order: str = "asc",
+        category_area: str | None = None,
+        category_type: str | None = None,
     ) -> tuple[list[CategoryDomain], int]:
         pass
 
