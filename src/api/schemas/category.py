@@ -16,6 +16,27 @@ class CategoryCreate(CategoryBase):
     pass
 
 
+class CategoryNodeCreate(BaseModel):
+    recipe_id: UUID | None = None
+    title: str
+    x: int
+    y: int
+    prerequisite_indices: list[int] = []
+
+
+class CategoryCreateWithNodes(CategoryBase):
+    nodes: list[CategoryNodeCreate] = []
+
+
+class CategoryNodeResponse(BaseModel):
+    id: UUID
+    recipe_id: UUID | None = None
+    title: str
+    x: int
+    y: int
+    prerequisite_ids: list[UUID] = []
+
+
 class CategoryUpdate(BaseModel):
     title: str | None = None
     subtitle: str | None = None
@@ -24,6 +45,10 @@ class CategoryUpdate(BaseModel):
     category_area: str | None = None
     category_type: str | None = None
     total_nodes: int | None = None
+
+
+class CategoryUpdateWithNodes(CategoryUpdate):
+    nodes: list[CategoryNodeCreate] | None = None
 
 
 class CategoryResponse(CategoryBase):

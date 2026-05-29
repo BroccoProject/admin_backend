@@ -1,7 +1,7 @@
 import math
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
@@ -118,6 +118,38 @@ class SQLCategoryRepository(ICategoryRepository):
         await self.db.refresh(category)
         return self._to_domain(category)
 
+    async def create_category_with_nodes(self, data: dict, nodes_data: list[dict]) -> CategoryDomain:
+        category = Category(**data)
+        category.total_nodes = len(nodes_data)
+        self.db.add(category)
+        await self.db.flush()
+
+        created_nodes = []
+        for node_data in nodes_data:
+            node = RoadmapNode(
+                category_id=category.id,
+                recipe_id=node_data.get("recipe_id"),
+                title=node_data.get("title"),
+                map_column=node_data.get("x"),
+                map_row=node_data.get("y"),
+                prerequisite_ids=[]
+            )
+            self.db.add(node)
+            created_nodes.append((node, node_data.get("prerequisite_indices", [])))
+
+        await self.db.flush()
+
+        for node, prereq_indices in created_nodes:
+            prereq_ids = []
+            for idx in prereq_indices:
+                if 0 <= idx < len(created_nodes):
+                    prereq_ids.append(created_nodes[idx][0].id)
+            node.prerequisite_ids = prereq_ids
+
+        await self.db.commit()
+        await self.db.refresh(category)
+        return self._to_domain(category)
+
     async def update_category(self, category_id: UUID, data: dict) -> CategoryDomain | None:
         result = await self.db.execute(select(Category).where(Category.id == category_id))
         category = result.scalar_one_or_none()
@@ -130,6 +162,67 @@ class SQLCategoryRepository(ICategoryRepository):
         await self.db.commit()
         await self.db.refresh(category)
         return self._to_domain(category)
+
+    async def update_category_with_nodes(self, category_id: UUID, data: dict, nodes_data: list[dict]) -> CategoryDomain | None:
+        result = await self.db.execute(select(Category).where(Category.id == category_id))
+        category = result.scalar_one_or_none()
+        if not category:
+            return None
+
+        # Update category metadata
+        category.total_nodes = len(nodes_data)
+        for field, value in data.items():
+            setattr(category, field, value)
+
+        # Delete existing nodes
+        await self.db.execute(
+            delete(RoadmapNode).where(RoadmapNode.category_id == category_id)
+        )
+        await self.db.flush()
+
+        # Create new nodes
+        created_nodes = []
+        for node_data in nodes_data:
+            node = RoadmapNode(
+                category_id=category.id,
+                recipe_id=node_data.get("recipe_id"),
+                title=node_data.get("title"),
+                map_column=node_data.get("x"),
+                map_row=node_data.get("y"),
+                prerequisite_ids=[]
+            )
+            self.db.add(node)
+            created_nodes.append((node, node_data.get("prerequisite_indices", [])))
+
+        await self.db.flush()
+
+        for node, prereq_indices in created_nodes:
+            prereq_ids = []
+            for idx in prereq_indices:
+                if 0 <= idx < len(created_nodes):
+                    prereq_ids.append(created_nodes[idx][0].id)
+            node.prerequisite_ids = prereq_ids
+
+        await self.db.commit()
+        await self.db.refresh(category)
+        return self._to_domain(category)
+
+    async def get_category_nodes(self, category_id: UUID) -> list[dict]:
+        result = await self.db.execute(
+            select(RoadmapNode).where(RoadmapNode.category_id == category_id)
+        )
+        nodes = result.scalars().all()
+        return [
+            {
+                "id": str(node.id),
+                "recipe_id": str(node.recipe_id) if node.recipe_id else None,
+                "title": node.title,
+                "x": node.map_column,
+                "y": node.map_row,
+                "prerequisite_ids": [str(pid) for pid in (node.prerequisite_ids or [])]
+            }
+            for node in nodes
+        ]
 
     async def delete_category(self, category_id: UUID) -> bool:
         result = await self.db.execute(select(Category).where(Category.id == category_id))

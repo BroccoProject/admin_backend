@@ -37,8 +37,17 @@ class CategoryService:
     async def create_category(self, data: dict) -> CategoryDomain:
         return await self.repository.create_category(data)
 
+    async def create_category_with_nodes(self, data: dict, nodes_data: list[dict]) -> CategoryDomain:
+        return await self.repository.create_category_with_nodes(data, nodes_data)
+
     async def update_category(self, category_id: UUID, data: dict) -> CategoryDomain | None:
         return await self.repository.update_category(category_id, data)
+
+    async def update_category_with_nodes(self, category_id: UUID, data: dict, nodes_data: list[dict]) -> CategoryDomain | None:
+        return await self.repository.update_category_with_nodes(category_id, data, nodes_data)
+
+    async def get_category_nodes(self, category_id: UUID) -> list[dict]:
+        return await self.repository.get_category_nodes(category_id)
 
     async def delete_category(self, category_id: UUID) -> bool:
         return await self.repository.delete_category(category_id)

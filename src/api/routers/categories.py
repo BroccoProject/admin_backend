@@ -9,6 +9,9 @@ from api.schemas.category import (
     CategoryUpdate,
     CategoryResponse,
     CategoryListResponse,
+    CategoryCreateWithNodes,
+    CategoryNodeResponse,
+    CategoryUpdateWithNodes,
 )
 from services.categories.category_service import CategoryService
 from api.dependencies.services import get_category_service
@@ -76,22 +79,49 @@ async def get_category_delete_preview(
 
 @router.post("", response_model=CategoryResponse, status_code=201, dependencies=[CanManageUsers])
 async def create_category(
-    data: CategoryCreate,
+    data: CategoryCreateWithNodes,
     service: CategoryService = Depends(get_category_service),
 ):
-    """Create a new category."""
-    category = await service.create_category(data.model_dump())
+    """Create a new category with optional roadmap nodes."""
+    data_dict = data.model_dump()
+    nodes_data = data_dict.pop("nodes", [])
+    if nodes_data:
+        category = await service.create_category_with_nodes(data_dict, nodes_data)
+    else:
+        category = await service.create_category(data_dict)
     return CategoryResponse.model_validate(category)
+
+
+@router.get("/{category_id}/nodes", response_model=list[CategoryNodeResponse], dependencies=[CanReadRecipes])
+async def get_category_nodes(
+    category_id: UUID,
+    service: CategoryService = Depends(get_category_service),
+):
+    """Get all roadmap nodes for a given category."""
+    category = await service.get_category_by_id(category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    nodes = await service.get_category_nodes(category_id)
+    return nodes
 
 
 @router.patch("/{category_id}", response_model=CategoryResponse, dependencies=[CanManageUsers])
 async def update_category(
     category_id: UUID,
-    data: CategoryUpdate,
+    data: CategoryUpdateWithNodes,
     service: CategoryService = Depends(get_category_service),
 ):
-    """Partially update a category."""
-    category = await service.update_category(category_id, data.model_dump(exclude_unset=True))
+    """Update a category and its nodes."""
+    data_dict = data.model_dump(exclude_unset=True)
+    if "nodes" in data_dict:
+        nodes_data = data_dict.pop("nodes")
+        if nodes_data is not None:
+            category = await service.update_category_with_nodes(category_id, data_dict, nodes_data)
+        else:
+            category = await service.update_category(category_id, data_dict)
+    else:
+        category = await service.update_category(category_id, data_dict)
+        
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     return CategoryResponse.model_validate(category)

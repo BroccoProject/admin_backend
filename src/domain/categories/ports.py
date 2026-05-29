@@ -29,7 +29,19 @@ class ICategoryRepository(abc.ABC):
         pass
 
     @abc.abstractmethod
+    async def create_category_with_nodes(self, data: dict, nodes_data: list[dict]) -> CategoryDomain:
+        pass
+
+    @abc.abstractmethod
     async def update_category(self, category_id: UUID, data: dict) -> CategoryDomain | None:
+        pass
+
+    @abc.abstractmethod
+    async def update_category_with_nodes(self, category_id: UUID, data: dict, nodes_data: list[dict]) -> CategoryDomain | None:
+        pass
+
+    @abc.abstractmethod
+    async def get_category_nodes(self, category_id: UUID) -> list[dict]:
         pass
 
     @abc.abstractmethod
