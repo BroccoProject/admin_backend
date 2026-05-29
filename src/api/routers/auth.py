@@ -28,6 +28,7 @@ async def google_oauth_callback(code: str, db: AsyncSession = Depends(get_admin_
         
     user_info = await get_google_user_info(access_token)
     google_sub = user_info.get("sub")
+    print("Sub:" + google_sub)
     email = user_info.get("email")
     if not google_sub or not email:
         raise HTTPException(status_code=400, detail="Invalid user info from Google")
