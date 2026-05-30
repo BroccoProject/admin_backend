@@ -25,12 +25,17 @@ class SQLAdminRepository:
         return AdminUser(
             id=profile.id,
             email=profile.email,
-            role=UserRole(profile.role)
+            role=UserRole(profile.role),
+            auth_provider=profile.auth_provider,
+            provider_id=profile.provider_id
         )
 
-    async def get_by_google_sub(self, google_sub: str) -> AdminUser | None:
+    async def get_by_provider(self, provider: str, provider_id: str) -> AdminUser | None:
         result = await self.db.execute(
-            select(AdminProfile).where(AdminProfile.google_sub == google_sub)
+            select(AdminProfile).where(
+                AdminProfile.auth_provider == provider,
+                AdminProfile.provider_id == provider_id
+            )
         )
         profile = result.scalar_one_or_none()
         
@@ -40,7 +45,9 @@ class SQLAdminRepository:
         return AdminUser(
             id=profile.id,
             email=profile.email,
-            role=UserRole(profile.role)
+            role=UserRole(profile.role),
+            auth_provider=profile.auth_provider,
+            provider_id=profile.provider_id
         )
 
     async def get_by_email(self, email: str) -> AdminUser | None:
@@ -55,36 +62,27 @@ class SQLAdminRepository:
         return AdminUser(
             id=profile.id,
             email=profile.email,
-            role=UserRole(profile.role)
+            role=UserRole(profile.role),
+            auth_provider=profile.auth_provider,
+            provider_id=profile.provider_id
         )
 
-    async def update_google_sub(self, admin_id: UUID, google_sub: str) -> AdminUser | None:
-        await self.db.execute(
-            update(AdminProfile).where(AdminProfile.google_sub == google_sub).values(google_sub=None)
-        )
-        
-        result = await self.db.execute(
-            select(AdminProfile).where(AdminProfile.id == admin_id)
-        )
-        profile = result.scalar_one_or_none()
-        if not profile:
-            return None
-        
-        profile.google_sub = google_sub
-        await self.db.commit()
-        await self.db.refresh(profile)
-        
-        return AdminUser(
-            id=profile.id,
-            email=profile.email,
-            role=UserRole(profile.role)
-        )
-
-    async def create_viewer_profile(self, email: str, google_sub: str) -> AdminUser:
+    async def create_profile(
+        self,
+        email: str,
+        role: str,
+        auth_provider: str,
+        provider_id: str | None,
+        password_hash: str | None = None,
+        created_by: UUID | None = None
+    ) -> AdminUser:
         new_profile = AdminProfile(
             email=email,
-            role="viewer",
-            google_sub=google_sub
+            role=role,
+            auth_provider=auth_provider,
+            provider_id=provider_id,
+            password_hash=password_hash,
+            created_by=created_by
         )
         self.db.add(new_profile)
         await self.db.commit()
@@ -92,7 +90,9 @@ class SQLAdminRepository:
         return AdminUser(
             id=new_profile.id,
             email=new_profile.email,
-            role=UserRole(new_profile.role)
+            role=UserRole(new_profile.role),
+            auth_provider=new_profile.auth_provider,
+            provider_id=new_profile.provider_id
         )
 
     async def create_access_request(self, email: str, message: str | None, user_id: UUID | None = None):
@@ -105,7 +105,7 @@ class SQLAdminRepository:
         if result.scalar_one_or_none():
             raise HTTPException(status_code=409, detail="A pending request for this email already exists.")
             
-        req = AccessRequest(email=email, message=message)
+        req = AccessRequest(email=email, message=message, profile_id=user_id)
         self.db.add(req)
         await self.db.commit()
         await self.db.refresh(req)
@@ -142,20 +142,33 @@ class SQLAdminRepository:
         request.resolved_at = datetime.now(timezone.utc)
         request.resolved_by = resolved_by
 
-        result = await self.db.execute(select(AdminProfile).where(AdminProfile.email == request.email))
-        existing_profile = result.scalar_one_or_none()
-
-        if existing_profile:
-            existing_profile.role = "editor"
-            self.db.add(existing_profile)
-            new_profile = existing_profile
+        if getattr(request, 'profile_id', None):
+            result = await self.db.execute(select(AdminProfile).where(AdminProfile.id == request.profile_id))
+            existing_profile = result.scalar_one_or_none()
+            if existing_profile:
+                existing_profile.role = "editor"
+                self.db.add(existing_profile)
+                new_profile = existing_profile
+            else:
+                raise HTTPException(status_code=404, detail="Profile associated with this request not found.")
         else:
-            new_profile = AdminProfile(
-                email=request.email,
-                role="editor",
-                google_sub=None # TODO: they will link their Google account on first login
-            )
-            self.db.add(new_profile)
+            # Fallback for older requests without profile_id
+            result = await self.db.execute(select(AdminProfile).where(AdminProfile.email == request.email).limit(1))
+            existing_profile = result.scalar_one_or_none()
+            
+            if existing_profile:
+                existing_profile.role = "editor"
+                self.db.add(existing_profile)
+                new_profile = existing_profile
+            else:
+                new_profile = AdminProfile(
+                    email=request.email,
+                    role="editor",
+                    auth_provider='local',
+                    provider_id=None,
+                    password_hash=None
+                )
+                self.db.add(new_profile)
 
         await self.db.commit()
         await self.db.refresh(new_profile)
