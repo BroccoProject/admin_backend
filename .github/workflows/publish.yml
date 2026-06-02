@@ -57,6 +57,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          passphrase: ${{ secrets.EC2_SSH_PASSPHRASE }}
           script: |
             cd /app
             sudo docker compose pull
