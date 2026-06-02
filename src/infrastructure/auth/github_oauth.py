@@ -37,7 +37,6 @@ async def get_github_user_info(access_token: str) -> dict:
         "Accept": "application/vnd.github.v3+json"
     }
     async with httpx.AsyncClient() as client:
-        # Get basic user info
         response = await client.get(GITHUB_USERINFO_URL, headers=headers)
         if response.status_code != 200:
             raise HTTPException(status_code=400, detail="Failed to fetch user info from GitHub")
