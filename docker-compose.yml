@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  backend:
+    image: ghcr.io/broccoproject/admin_backend:latest
+    container_name: admin_panel_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL_ADMIN=${DATABASE_URL_ADMIN}
+    env_file:
+      - /app/.env
