@@ -21,9 +21,10 @@ router = APIRouter(prefix="/access-requests", tags=["Access Requests"])
 @router.post("", response_model=AccessRequestResponse, status_code=201, dependencies=[IsAuthenticated])
 async def create_access_request(
     data: AccessRequestCreate,
+    current_user: AdminUser = Depends(get_current_admin_user),
     service: AdminService = Depends(get_admin_service)
 ):
-    req = await service.create_access_request(email=data.email, message=data.message, user_id=None)
+    req = await service.create_access_request(email=data.email, message=data.message, user_id=current_user.id)
     return AccessRequestResponse.model_validate(req)
 
 @router.get("/{token}/approve")

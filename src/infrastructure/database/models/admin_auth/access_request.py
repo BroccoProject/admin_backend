@@ -21,6 +21,7 @@ class AccessRequest(AdminBase):
         primary_key=True, default=uuid4, server_default=text("gen_random_uuid()")
     )
     email: Mapped[str] = mapped_column(String, nullable=False)
+    profile_id: Mapped[UUID | None] = mapped_column(ForeignKey("admin_profiles.id", ondelete="CASCADE"), nullable=True)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         SAEnum('pending', 'approved', 'rejected', name='access_request_status'),

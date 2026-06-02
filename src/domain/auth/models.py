@@ -12,3 +12,5 @@ class AdminUser:
     id: UUID
     email: str
     role: UserRole
+    auth_provider: str
+    provider_id: str | None = None
