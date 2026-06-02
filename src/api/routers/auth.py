@@ -50,8 +50,8 @@ async def google_oauth_callback(code: str, service: AdminService = Depends(get_a
         key="admin_session",
         value=jwt_token,
         httponly=True,
-        secure=False, # musi byc true na produkcji
-        samesite="lax",
+        secure=settings.is_production,
+        samesite="none" if settings.is_production else "lax",
         max_age=3600,
     )
     return response
@@ -86,8 +86,8 @@ async def github_oauth_callback(code: str, service: AdminService = Depends(get_a
         key="admin_session",
         value=jwt_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=settings.is_production,
+        samesite="none" if settings.is_production else "lax",
         max_age=3600,
     )
     return response
@@ -107,8 +107,8 @@ async def login_local(request: LoginRequest, service: AdminService = Depends(get
         key="admin_session",
         value=jwt_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=settings.is_production,
+        samesite="none" if settings.is_production else "lax",
         max_age=3600,
     )
     return response
@@ -118,8 +118,8 @@ async def delete_session(response: Response):
     response.delete_cookie(
         key="admin_session",
         httponly=True,
-        secure=False, # musi byc true na produkcji
-        samesite="lax"
+        secure=settings.is_production,
+        samesite="none" if settings.is_production else "lax"
     )
     return {"detail": "Logged out"}
 

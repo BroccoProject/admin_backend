@@ -10,3 +10,21 @@ services:
       - DATABASE_URL_ADMIN=${DATABASE_URL_ADMIN}
     env_file:
       - /app/.env
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
+    command: caddy reverse-proxy --from https://${DOMAIN} --to http://backend:8000
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

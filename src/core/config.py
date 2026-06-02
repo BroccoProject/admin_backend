@@ -35,4 +35,8 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    @property
+    def is_production(self) -> bool:
+        return self.BACKEND_URL.startswith("https://")
+
 settings = Settings()
